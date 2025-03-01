@@ -1,0 +1,62 @@
+services:
+  mysql_master:
+    image: mysql:latest
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+
+      REPLICATION_USER: replication
+      REPLICATION_PASSWORD: replication
+      TZ: Asia/Jakarta
+    ports:
+      - "3306:3306"
+    volumes:
+      - data:/var/lib/mysql
+      - ./create_tables.sql:/docker-entrypoint-initdb.d/create_tables.sql 
+      - ./logs/mysql:/var/log/mysql
+      - ./my.cnf:/etc/mysql/conf.d/my.cnf 
+      - ./create-replication-user.sh:/docker-entrypoint-initdb.d/create-replication-user.sh
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  phpmyadmin:
+    image: arm64v8/phpmyadmin:latest
+    restart: unless-stopped
+    environment:
+
+      PMA_VERBOSES: localhost, localhost-replication
+      PMA_HOSTS: mysql_master, host.docker.internal
+      PMA_PORTS: 3306, 3366
+
+      PMA_ARBITRARY: 0
+    
+      PMA_CONTROLHOST: mysql_master
+      PMA_CONTROLPORT: 3306
+      PMA_DB: phpmyadmin
+      PMA_CONTROLUSER: root
+      PMA_CONTROLPASS: root
+      PMA_QUERYHISTORYDB: true
+      PMA_QUERYHISTORYMAX: 1000
+
+      UPLOAD_LIMIT: 1G
+
+      TZ: Asia/Jakarta
+      APACHE_PORT: 7070
+    ports:
+      - "7070:7070"
+    depends_on:
+      - mysql_master
+    volumes:
+      - data:/var/lib/mysql
+      - ./logs/phpmyadmin:/var/log/apache2
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+volumes:
+  data:

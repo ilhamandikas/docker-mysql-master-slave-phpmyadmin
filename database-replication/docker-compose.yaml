@@ -1,0 +1,25 @@
+services:
+  mysql_slave:
+    image: mysql:latest
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+
+      MASTER_HOST_URL: host.docker.internal
+      MASTER_ROOT_PASSWORD: root
+      MASTER_PORT: 3306
+      
+      REPLICATION_USER: replication
+      REPLICATION_PASSWORD: replication
+      
+      TZ: Asia/Jakarta
+    ports:
+      - "3366:3306"
+    volumes:
+      - data:/var/lib/mysql
+      - ./logs/mysql:/var/log/mysql
+      - ./my.cnf:/etc/mysql/conf.d/my.cnf 
+      - ./setup-replication.sh:/docker-entrypoint-initdb.d/setup-replication.sh
+
+volumes:
+  data:
